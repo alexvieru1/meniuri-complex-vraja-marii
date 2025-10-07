@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { destroySession } from "@/lib/auth";
+import { NextResponse } from 'next/server'
+import { destroySession } from '@/lib/auth'
 
-export async function GET() {
-  await destroySession();
-  return NextResponse.redirect(
-    new URL(
-      "/admin/login",
-      process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-    )
-  );
+export async function GET(request: Request) {
+  // clear the cookie
+  await destroySession()
+
+  // Redirect to /admin/login on the SAME origin as the request
+  // (works on localhost and on Vercel)
+  const url = new URL('/admin/login', request.url)
+  return NextResponse.redirect(url)
 }
