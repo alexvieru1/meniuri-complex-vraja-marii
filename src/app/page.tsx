@@ -1,103 +1,305 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { IconSearch, IconTrash, IconPlus } from "@tabler/icons-react";
+
+// --- Types ---
+export type Dish = { id: number; name: string; gramaj: number };
+
+type MealKey = "mic_dejun" | "pranz" | "cina";
+type MenuKey = "normal" | "diabetic" | "hepato_gastro";
+
+const MEAL_LABEL: Record<MealKey, string> = {
+  mic_dejun: "Mic dejun",
+  pranz: "Prânz",
+  cina: "Cină",
+};
+
+const MENU_LABEL: Record<MenuKey, string> = {
+  normal: "Normal",
+  diabetic: "Diabetic",
+  hepato_gastro: "Hepato-gastro-intestinal",
+};
+
+const MENU_STYLE: Record<MenuKey, { bg: string; border: string }> = {
+  normal: {
+    bg: "bg-yellow-100 print:bg-yellow-100",
+    border: "border-yellow-300",
+  },
+  diabetic: {
+    bg: "bg-rose-100 print:bg-rose-100",
+    border: "border-rose-300",
+  },
+  hepato_gastro: {
+    bg: "bg-sky-100 print:bg-sky-100",
+    border: "border-sky-300",
+  },
+};
+
+const LIMITS: Record<MealKey, number> = {
+  mic_dejun: 10,
+  pranz: 5,
+  cina: 5,
+};
+
+// diacritics-insensitive normalizer (RO)
+const normalizeRo = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ș|ş/g, "s")
+    .replace(/ț|ţ/g, "t")
+    .replace(/ă/g, "a")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i");
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [date, setDate] = useState(""); // ex: 2025-10-08 or free text like "8 Octombrie 2025"
+  const [allDishes, setAllDishes] = useState<Dish[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Menu state: menu -> meal -> Dish[]
+  const [menu, setMenu] = useState<Record<MenuKey, Record<MealKey, Dish[]>>>(
+    () => ({
+      normal: { mic_dejun: [], pranz: [], cina: [] },
+      diabetic: { mic_dejun: [], pranz: [], cina: [] },
+      hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
+    })
+  );
+
+  // Load dishes from API (authorized endpoint)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/dishes", { cache: "no-store" });
+        if (res.ok) {
+          const data = (await res.json()) as Dish[];
+          setAllDishes(data);
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
+  function addDish(toMenu: MenuKey, toMeal: MealKey, dish: Dish) {
+    setMenu((prev) => {
+      const current = prev[toMenu][toMeal];
+      const limit = LIMITS[toMeal];
+      if (current.find((x) => x.id === dish.id)) return prev; // no duplicates
+      if (current.length >= limit) return prev; // reached limit
+      return {
+        ...prev,
+        [toMenu]: {
+          ...prev[toMenu],
+          [toMeal]: [...current, dish],
+        },
+      };
+    });
+  }
+
+  function removeDish(fromMenu: MenuKey, fromMeal: MealKey, dishId: number) {
+    setMenu((prev) => ({
+      ...prev,
+      [fromMenu]: {
+        ...prev[fromMenu],
+        [fromMeal]: prev[fromMenu][fromMeal].filter((d) => d.id !== dishId),
+      },
+    }));
+  }
+
+  // Search + add widget (each meal has its own input & results)
+  function SearchAdd({ toMenu, toMeal }: { toMenu: MenuKey; toMeal: MealKey }) {
+    const [localQuery, setLocalQuery] = useState("");
+
+    const localFiltered = useMemo(() => {
+      const q = normalizeRo(localQuery.trim());
+      if (!q) return [];
+      return allDishes
+        .filter((d) => normalizeRo(d.name).includes(q))
+        .slice(0, 25);
+    }, [allDishes, localQuery]);
+
+    const list = menu[toMenu][toMeal];
+    const limit = LIMITS[toMeal];
+
+    return (
+      <div className="space-y-3">
+        {/* Selected list */}
+        {list.length === 0 ? (
+          <p className="text-sm text-zinc-500">Niciun fel adăugat încă.</p>
+        ) : (
+          <ul className="space-y-4">
+            {list.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between rounded-md border p-4"
+              >
+                <div>
+                  <p className="font-medium leading-none">{d.name}</p>
+                  <p className="text-xs text-zinc-500">{d.gramaj} g</p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => removeDish(toMenu, toMeal, d.id)}
+                  className="gap-2"
+                >
+                  <IconTrash size={16} /> Șterge
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Search input */}
+        <div className="relative">
+          <IconSearch
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            size={18}
+          />
+          <Input
+            className="pl-10"
+            placeholder="Caută fel (diacritice opționale)"
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Results appear only if there is a query */}
+        {localQuery.trim() && (
+          <div className="max-h-48 overflow-auto rounded-md border">
+            {localFiltered.length === 0 ? (
+              <p className="p-3 text-sm text-zinc-500">Niciun rezultat.</p>
+            ) : (
+              <ul className="divide-y">
+                {localFiltered.map((d) => {
+                  const disabled =
+                    menu[toMenu][toMeal].some((x) => x.id === d.id) ||
+                    menu[toMenu][toMeal].length >= LIMITS[toMeal];
+                  return (
+                    <li
+                      key={d.id}
+                      className="flex items-center justify-between p-4"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{d.name}</p>
+                        <p className="text-xs text-zinc-500">{d.gramaj} g</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={disabled}
+                        onClick={() => addDish(toMenu, toMeal, d)}
+                        className="gap-2"
+                      >
+                        <IconPlus size={16} /> Adaugă
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="text-right text-xs text-zinc-500">
+          {list.length}/{limit} feluri
+        </div>
+      </div>
+    );
+  }
+
+  function MenuCard({ menuKey }: { menuKey: MenuKey }) {
+    return (
+      <Card
+        className={`rounded-xl border shadow-sm print:shadow-none ${MENU_STYLE[menuKey].bg} ${MENU_STYLE[menuKey].border}`}
+      >
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">
+              {MENU_LABEL[menuKey]}
+            </CardTitle>
+            <Badge variant="secondary">
+              {Object.values(menu[menuKey]).reduce((a, b) => a + b.length, 0)}{" "}
+              feluri
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3 p-4 sm:p-6">
+          {(Object.keys(MEAL_LABEL) as MealKey[]).map((meal) => (
+            <div key={meal} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">{MEAL_LABEL[meal]}</h3>
+                <Badge variant="outline" className="text-[11px]">
+                  max {LIMITS[meal]}
+                </Badge>
+              </div>
+              <SearchAdd toMenu={menuKey} toMeal={meal} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 print:bg-white px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-8">
+        {/* Header */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-800">
+              Generator meniuri zilnice
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Selectează data, caută feluri și adaugă-le la mesele zilei.
+            </p>
+          </div>
+        </div>
+
+        {/* Date + actions */}
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="grid gap-3 pt-6 sm:grid-cols-3">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm text-zinc-600">
+                Data meniului
+              </label>
+              <Input
+                placeholder="ex: 8 Octombrie 2025 sau 2025-10-08"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-6 sm:gap-2">
+              <Button className="flex-1 py-3 text-sm font-medium">
+                Previzualizează PDF
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 py-3 text-sm font-medium"
+                onClick={() => {
+                  setMenu({
+                    normal: { mic_dejun: [], pranz: [], cina: [] },
+                    diabetic: { mic_dejun: [], pranz: [], cina: [] },
+                    hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
+                  });
+                }}
+              >
+                Resetează
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Menus */}
+        <div className="space-y-16">
+          {(Object.keys(MENU_LABEL) as MenuKey[]).map((m) => (
+            <MenuCard key={m} menuKey={m} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
