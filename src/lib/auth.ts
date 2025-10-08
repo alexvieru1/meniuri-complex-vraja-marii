@@ -3,12 +3,17 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 
 type CookieOptions = {
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: "lax" | "strict" | "none";
-  path?: string;
-  maxAge?: number;
-  expires?: Date;
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "lax" | "strict" | "none";
+  path: string;
+  maxAge: number;
+  expires: Date;
+  domain?: string;
+};
+
+type CookieDeleteOptions = {
+  path: string;
   domain?: string;
 };
 
@@ -25,49 +30,38 @@ function normalizeDomain(value: string | undefined) {
   if (!value) return undefined;
   const trimmed = value.trim();
   if (!trimmed || trimmed === "localhost") return undefined;
-  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
-  return withoutProtocol.split(":")[0] || undefined;
-}
-
-function resolveCookieDomain(request?: Request) {
-  const fromEnv =
-    normalizeDomain(process.env.COOKIE_DOMAIN) ||
-    normalizeDomain(process.env.ADMIN_COOKIE_DOMAIN) ||
-    normalizeDomain(process.env.NEXT_PUBLIC_COOKIE_DOMAIN) ||
-    normalizeDomain(process.env.NEXT_PUBLIC_BASE_URL);
-  if (fromEnv) return fromEnv;
-
-  if (!request) return undefined;
-  try {
-    const { hostname } = new URL(request.url);
-    if (!hostname || hostname === "localhost") return undefined;
-    return hostname;
-  } catch {
-    return undefined;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      return new URL(trimmed).hostname;
+    } catch {
+      return undefined;
+    }
   }
+  return trimmed.split(":")[0];
 }
 
-export function getCookieOptions(request?: Request): CookieOptions {
-  const base: CookieOptions = {
+const COOKIE_DOMAIN =
+  normalizeDomain(process.env.COOKIE_DOMAIN) ||
+  normalizeDomain(process.env.ADMIN_COOKIE_DOMAIN) ||
+  normalizeDomain(process.env.NEXT_PUBLIC_COOKIE_DOMAIN);
+
+export function buildCookieOptions(): CookieOptions {
+  return {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE,
     expires: new Date(Date.now() + MAX_AGE * 1000),
+    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
   };
-  if (process.env.NODE_ENV === "production") {
-    base.secure = true;
-  }
-  const domain = resolveCookieDomain(request);
-  if (domain) base.domain = domain;
-  return base;
 }
 
-export function getCookieDeleteOptions(request?: Request): CookieOptions {
-  const options: CookieOptions = { path: "/" };
-  const domain = resolveCookieDomain(request);
-  if (domain) options.domain = domain;
-  return options;
+export function buildCookieDeleteOptions(): CookieDeleteOptions {
+  return {
+    path: "/",
+    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+  };
 }
 
 function signPayload(payload: string) {
@@ -86,45 +80,39 @@ export function createSessionToken(email: string) {
   return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
-export async function createSession(email: string, request?: Request) {
-  const token = createSessionToken(email);
-  const jar = await cookies();
-  jar.set(COOKIE_NAME, token, getCookieOptions(request));
-  return token;
-}
-
-export async function destroySession(request?: Request) {
-  const jar = await cookies();
-  jar.delete({ name: COOKIE_NAME, ...getCookieDeleteOptions(request) });
-}
-
 export async function getSession(): Promise<{ email: string } | null> {
   const jar = await cookies();
-  const raw = jar.get(COOKIE_NAME)?.value ?? null;
+  const raw = jar.get(COOKIE_NAME)?.value;
   if (!raw) return null;
+
   const [b64, sig] = raw.split(".");
   if (!b64 || !sig) return null;
+
   let payload: string;
   try {
     payload = Buffer.from(b64, "base64url").toString();
   } catch {
     return null;
   }
+
   const expected = signPayload(payload);
   const sigBuf = Buffer.from(sig, "hex");
   const expectedBuf = Buffer.from(expected, "hex");
+
   if (
     sigBuf.length !== expectedBuf.length ||
     !crypto.timingSafeEqual(sigBuf, expectedBuf)
   ) {
     return null;
   }
+
   let data: { email: string; exp: number };
   try {
     data = JSON.parse(payload) as { email: string; exp: number };
   } catch {
     return null;
   }
+
   if (data.exp * 1000 < Date.now()) return null;
   return { email: data.email };
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { getSession, destroySession, COOKIE_NAME, getCookieDeleteOptions } from '@/lib/auth'
+import { getSession, COOKIE_NAME, buildCookieDeleteOptions } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -33,10 +33,10 @@ export async function GET() {
 }
 
 // Optional: allow logging out by calling DELETE /api/admin/session
-export async function DELETE(request: Request) {
-  await destroySession(request)
+export async function DELETE() {
+  const jar = await cookies()
+  jar.delete(COOKIE_NAME)
   const res = new NextResponse(null, { status: 204 })
-  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions(request) }
-  res.cookies.delete(deletion)
+  res.cookies.delete({ name: COOKIE_NAME, ...buildCookieDeleteOptions() })
   return withNoStore(res)
 }

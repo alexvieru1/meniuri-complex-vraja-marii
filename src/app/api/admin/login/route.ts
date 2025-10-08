@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { createSession, COOKIE_NAME, getCookieOptions } from "@/lib/auth";
+import {
+  createSessionToken,
+  COOKIE_NAME,
+  buildCookieOptions,
+} from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +28,8 @@ export async function POST(request: Request) {
     return redirectTo("/admin/login?e=1", request, 303);
   }
 
-  const token = await createSession(email, request);
+  const token = createSessionToken(email);
   const res = redirectTo("/admin/dishes", request, 303);
-  res.cookies.set(COOKIE_NAME, token, getCookieOptions(request));
+  res.cookies.set(COOKIE_NAME, token, buildCookieOptions());
   return res;
 }
