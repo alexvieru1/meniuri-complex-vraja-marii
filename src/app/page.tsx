@@ -1,18 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic";
 // near the imports in src/app/page.tsx
-type PdfDownloadProps = { date: string; menu: Record<MenuKey, Record<MealKey, Dish[]>> }
+type PdfDownloadProps = {
+  date: string;
+  menu: Record<MenuKey, Record<MealKey, Dish[]>>;
+};
 
 // use a relative import so TS definitely finds the file
-const PdfDownload = dynamic<PdfDownloadProps>(() => import('../components/pdf-download'), { ssr: false })
+const PdfDownload = dynamic<PdfDownloadProps>(
+  () => import("../components/pdf-download"),
+  { ssr: false }
+);
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { IconSearch, IconTrash, IconPlus } from "@tabler/icons-react";
-import { useReactToPrint } from 'react-to-print'
+import { useReactToPrint } from "react-to-print";
 
 // --- Types ---
 export type Dish = { id: number; name: string; gramaj: number };
@@ -48,10 +54,10 @@ const MENU_STYLE: Record<MenuKey, { bg: string; border: string }> = {
 };
 
 const MENU_PRINT: Record<MenuKey, { bg: string; border: string }> = {
-  normal: { bg: '#FEF3C7', border: '#FCD34D' },      // yellow-100 / yellow-300
-  diabetic: { bg: '#FFE4E6', border: '#FDA4AF' },    // rose-100 / rose-300
-  hepato_gastro: { bg: '#E0F2FE', border: '#7DD3FC' } // sky-100 / sky-300
-}
+  normal: { bg: "#FEF3C7", border: "#FCD34D" }, // yellow-100 / yellow-300
+  diabetic: { bg: "#FFE4E6", border: "#FDA4AF" }, // rose-100 / rose-300
+  hepato_gastro: { bg: "#E0F2FE", border: "#7DD3FC" }, // sky-100 / sky-300
+};
 
 const LIMITS: Record<MealKey, number> = {
   mic_dejun: 10,
@@ -84,18 +90,23 @@ export default function Home() {
     })
   );
 
-  const printableRef = useRef<HTMLDivElement>(null)
+  const printableRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     contentRef: printableRef,
-    documentTitle: `Meniuri_${date || new Date().toISOString().slice(0,10)}`,
+    documentTitle: `Meniuri_${date || new Date().toISOString().slice(0, 10)}`,
     pageStyle: `@page { size: A4 landscape; margin: 12mm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`,
-  })
+  });
 
   // Load dishes from API (authorized endpoint)
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/dishes", { cache: "no-store" });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/dishes`,
+          {
+            cache: "no-store",
+          }
+        );
         if (res.ok) {
           const data = (await res.json()) as Dish[];
           setAllDishes(data);
@@ -294,7 +305,10 @@ export default function Home() {
               />
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-6 sm:gap-2">
-              <Button onClick={handlePrint} className="flex-1 py-3 text-sm font-medium">
+              <Button
+                onClick={handlePrint}
+                className="flex-1 py-3 text-sm font-medium"
+              >
                 Previzualizează / Exportă PDF
               </Button>
               <PdfDownload date={date} menu={menu} />
@@ -306,7 +320,7 @@ export default function Home() {
                     normal: { mic_dejun: [], pranz: [], cina: [] },
                     diabetic: { mic_dejun: [], pranz: [], cina: [] },
                     hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
-                  })
+                  });
                 }}
               >
                 Resetează
@@ -326,12 +340,14 @@ export default function Home() {
           ref={printableRef}
           aria-hidden
           className="pointer-events-none absolute -left-[9999px] top-0 w-[1122px] print:static print:w-auto print:p-0"
-          style={{ backgroundColor: '#ffffff', color: '#111827' }}
+          style={{ backgroundColor: "#ffffff", color: "#111827" }}
         >
           <div className="mx-auto space-y-4 p-4 print:p-0">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-semibold">Meniul zilei</h1>
-              <div className="text-sm" style={{ color: '#374151' }}>Data: {date || '___'} </div>
+              <div className="text-sm" style={{ color: "#374151" }}>
+                Data: {date || "___"}{" "}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -339,17 +355,29 @@ export default function Home() {
                 <div
                   key={m}
                   className="rounded-xl print:shadow-none"
-                  style={{ backgroundColor: MENU_PRINT[m].bg, border: `1px solid ${MENU_PRINT[m].border}` }}
+                  style={{
+                    backgroundColor: MENU_PRINT[m].bg,
+                    border: `1px solid ${MENU_PRINT[m].border}`,
+                  }}
                 >
-                  <div className="p-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
-                    <div className="text-base font-semibold">{MENU_LABEL[m]}</div>
+                  <div
+                    className="p-3"
+                    style={{ borderBottom: "1px solid #E5E7EB" }}
+                  >
+                    <div className="text-base font-semibold">
+                      {MENU_LABEL[m]}
+                    </div>
                   </div>
                   <div className="grid gap-3 p-3">
                     {(Object.keys(MEAL_LABEL) as MealKey[]).map((meal) => (
                       <div key={meal} className="">
-                        <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide">{MEAL_LABEL[meal]}</div>
+                        <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide">
+                          {MEAL_LABEL[meal]}
+                        </div>
                         {menu[m][meal].length === 0 ? (
-                          <div className="text-xs" style={{ color: '#4B5563' }}>—</div>
+                          <div className="text-xs" style={{ color: "#4B5563" }}>
+                            —
+                          </div>
                         ) : (
                           <ul className="ml-4 list-disc space-y-1">
                             {menu[m][meal].map((d) => (
