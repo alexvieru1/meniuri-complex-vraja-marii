@@ -46,3 +46,13 @@ export async function destroySession(req: NextRequest, res: NextResponse) {
   }
   res.cookies.delete(COOKIE_NAME)
 }
+
+export async function GET(req: NextRequest) {
+  const session = await getSession(req)
+  const res = NextResponse.json(
+    session ? { ok: true, email: session.email } : { ok: false },
+    { status: session ? 200 : 401 }
+  )
+  res.headers.set('Cache-Control', 'no-store')
+  return res
+}
