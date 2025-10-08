@@ -1,5 +1,4 @@
-'use client'
-
+import React from 'react'
 import { Document, Page, StyleSheet, View, Text } from '@react-pdf/renderer'
 
 // Keep types aligned with the app
@@ -26,10 +25,27 @@ const MENU_PRINT: Record<MenuKey, { bg: string; border: string }> = {
   hepato_gastro: { bg: '#E0F2FE', border: '#7DD3FC' }, // sky-100 / sky-300
 }
 
+const toAscii = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ș|ş/g, 's')
+    .replace(/Ș|Ş/g, 'S')
+    .replace(/ț|ţ/g, 't')
+    .replace(/Ț|Ţ/g, 'T')
+    .replace(/ă/g, 'a')
+    .replace(/Ă/g, 'A')
+    .replace(/â/g, 'a')
+    .replace(/Â/g, 'A')
+    .replace(/î/g, 'i')
+    .replace(/Î/g, 'I')
+
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     padding: 24,
+    fontSize: 10,
+    color: '#111827',
   },
   header: {
     flexDirection: 'row',
@@ -40,23 +56,22 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: 700 },
   date: { fontSize: 12, color: '#374151' },
   grid: {
-    display: 'flex',
     flexDirection: 'row',
-    gap: 12,
   },
   col: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    overflow: 'hidden',
   },
+  colSpacer: { width: 12 },
   colHeader: {
     padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   colTitle: { fontSize: 12, fontWeight: 700 },
-  colBody: { padding: 8, display: 'flex', gap: 6 },
+  colBody: { padding: 8 },
+  mealBlock: { marginBottom: 6 },
   mealTitle: {
     fontSize: 10,
     fontWeight: 700,
@@ -76,45 +91,55 @@ export default function MenuPdf({
   menu: Record<MenuKey, Record<MealKey, Dish[]>>
   orientation?: 'portrait' | 'landscape'
 }) {
+  const menuKeys: MenuKey[] = ['normal', 'diabetic', 'hepato_gastro']
+  const mealKeys: MealKey[] = ['mic_dejun', 'pranz', 'cina']
+  const displayDate = date?.trim() ? toAscii(date) : '___'
+
   return (
     <Document>
       <Page size="A4" orientation={orientation} style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>Meniul zilei</Text>
-          <Text style={styles.date}>Data: {date || '___'}</Text>
+          <Text style={styles.date}>Data: {displayDate}</Text>
         </View>
+
         <View style={styles.grid}>
-          {(Object.keys(MENU_LABEL) as MenuKey[]).map((m) => (
-            <View
-              key={m}
-              style={{
-                ...styles.col,
-                borderColor: MENU_PRINT[m].border,
-                backgroundColor: MENU_PRINT[m].bg,
-              }}
-            >
-              <View style={styles.colHeader}>
-                <Text style={styles.colTitle}>{MENU_LABEL[m]}</Text>
-              </View>
-              <View style={styles.colBody}>
-                {(Object.keys(MEAL_LABEL) as MealKey[]).map((meal) => (
-                  <View key={meal}>
-                    <Text style={styles.mealTitle}>{MEAL_LABEL[meal]}</Text>
-                    {menu[m][meal].length === 0 ? (
-                      <Text style={styles.empty}>—</Text>
-                    ) : (
-                      <View>
-                        {menu[m][meal].map((d) => (
-                          <Text key={`${d.id}-${d.name}`} style={styles.item}>
-                            • {d.name} — {d.gramaj} g
-                          </Text>
-                        ))}
+          {menuKeys.map((m, idx) => (
+            <React.Fragment key={m}>
+              <View
+                style={{
+                  ...styles.col,
+                  borderColor: MENU_PRINT[m].border,
+                  backgroundColor: MENU_PRINT[m].bg,
+                }}
+              >
+                <View style={styles.colHeader}>
+                  <Text style={styles.colTitle}>{toAscii(MENU_LABEL[m])}</Text>
+                </View>
+                <View style={styles.colBody}>
+                  {mealKeys.map((meal) => {
+                    const list = menu?.[m]?.[meal] ?? []
+                    return (
+                      <View key={`${m}-${meal}`} style={styles.mealBlock}>
+                        <Text style={styles.mealTitle}>{toAscii(MEAL_LABEL[meal])}</Text>
+                        {list.length === 0 ? (
+                          <Text style={styles.empty}>—</Text>
+                        ) : (
+                          <View>
+                            {list.map((d) => (
+                              <Text key={`${m}-${meal}-${d.id}-${d.name}`} style={styles.item}>
+                                • {toAscii(d.name)} — {d.gramaj} g
+                              </Text>
+                            ))}
+                          </View>
+                        )}
                       </View>
-                    )}
-                  </View>
-                ))}
+                    )
+                  })}
+                </View>
               </View>
-            </View>
+              {idx < menuKeys.length - 1 ? <View style={styles.colSpacer} /> : null}
+            </React.Fragment>
           ))}
         </View>
       </Page>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import dynamic from "next/dynamic";
 // near the imports in src/app/page.tsx
 type PdfDownloadProps = {
@@ -10,8 +10,15 @@ type PdfDownloadProps = {
 
 // use a relative import so TS definitely finds the file
 const PdfDownload = dynamic<PdfDownloadProps>(
-  () => import("../components/pdf-download"),
-  { ssr: false }
+  () => import("../components/pdf-download").then((m) => m.default),
+  {
+    ssr: false,
+    loading: () => (
+      <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+        Descarcă PDF
+      </Button>
+    ),
+  }
 );
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -89,6 +96,9 @@ export default function Home() {
       hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
     })
   );
+
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const printableRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -310,7 +320,21 @@ export default function Home() {
               >
                 Previzualizează / Exportă PDF
               </Button>
-              <PdfDownload date={date} menu={menu} />
+              {mounted ? (
+                <Suspense
+                  fallback={
+                    <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+                      Descarcă PDF
+                    </Button>
+                  }
+                >
+                  <PdfDownload date={date} menu={menu} />
+                </Suspense>
+              ) : (
+                <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+                  Descarcă PDF
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="flex-1 py-3 text-sm font-medium"
