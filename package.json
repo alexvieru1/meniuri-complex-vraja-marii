@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "postinstall": "prisma generate",
-    "build": "pnpm prisma migrate deploy --skip-advisory-lock && next build --turbopack",
+    "build": "PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT=60000 pnpm prisma migrate deploy && next build --turbopack",
     "start": "next start",
     "lint": "eslint"
   },
