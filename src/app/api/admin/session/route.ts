@@ -16,8 +16,8 @@ function withNoStore(res: NextResponse) {
 // Health check for the current admin session (used by the navbar/pages)
 export async function GET() {
   // Read the raw cookie as a diagnostic to distinguish "cookie not sent" vs "token invalid"
-  const jar = cookies()
-  const raw = (await jar).get(COOKIE_NAME)?.value ?? null
+  const jar = await cookies()
+  const raw = jar.get(COOKIE_NAME)?.value ?? null
 
   const session = await getSession()
 

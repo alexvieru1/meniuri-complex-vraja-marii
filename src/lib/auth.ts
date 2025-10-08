@@ -11,8 +11,6 @@ type CookieOptions = {
   expires?: Date;
 };
 
-type CookieStore = Awaited<ReturnType<typeof cookies>>;
-
 export const COOKIE_NAME = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
@@ -31,8 +29,8 @@ export async function createSession(email: string) {
     .createHmac("sha256", getSecret())
     .update(payload)
     .digest("hex");
-  const token = Buffer.from(payload).toString("base64") + "." + sig;
-  const jar = (await cookies()) as CookieStore;
+  const token = `${Buffer.from(payload).toString("base64url")}.${sig}`;
+  const jar = await cookies();
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -43,22 +41,34 @@ export async function createSession(email: string) {
 }
 
 export async function destroySession() {
-  const jar = (await cookies()) as CookieStore;
+  const jar = await cookies();
   jar.delete(COOKIE_NAME);
 }
 
 export async function getSession(): Promise<{ email: string } | null> {
-  const jar = (await cookies()) as CookieStore;
-  const raw = jar.get(COOKIE_NAME)?.value;
+  const jar = await cookies();
+  const raw = jar.get(COOKIE_NAME)?.value ?? null;
   if (!raw) return null;
   const [b64, sig] = raw.split(".");
   if (!b64 || !sig) return null;
-  const payload = Buffer.from(b64, "base64").toString();
+  let payload: string;
+  try {
+    payload = Buffer.from(b64, "base64url").toString();
+  } catch {
+    return null;
+  }
   const expected = crypto
     .createHmac("sha256", getSecret())
     .update(payload)
     .digest("hex");
-  if (sig !== expected) return null;
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (
+    sigBuf.length !== expectedBuf.length ||
+    !crypto.timingSafeEqual(sigBuf, expectedBuf)
+  ) {
+    return null;
+  }
   let data: { email: string; exp: number };
   try {
     data = JSON.parse(payload) as { email: string; exp: number };
