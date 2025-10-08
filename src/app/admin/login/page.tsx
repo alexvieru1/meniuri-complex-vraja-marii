@@ -1,68 +1,63 @@
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { createSession, getSession } from "@/lib/auth";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import Image from 'next/image'
+import Link from 'next/link'
+import { loginAction } from './actions'
 
-async function loginAction(formData: FormData) {
-  "use server";
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
-  const ADMIN_PASS = process.env.ADMIN_PASS || "";
-
-  if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-    await createSession(email);
-    redirect("/admin/dishes");
-  }
-  const jar = await cookies();
-  jar.set("login_error", "Date incorecte", { path: "/admin/login", maxAge: 10 });
-  redirect("/admin/login");
-}
-
-export default async function AdminLoginPage() {
-  const session = await getSession();
-  if (session) redirect("/admin/dishes");
-
-  const jar = await cookies();
-  const error = jar.get("login_error")?.value;
+export default function AdminLoginPage({ searchParams }: { searchParams?: { e?: string } }) {
+  const hasError = Boolean(searchParams?.e)
 
   return (
-    <div className="mx-auto max-w-sm pt-14">
-      <div className="mb-6 flex flex-col items-center justify-center gap-2">
-        <Image
-          src="http://asclepios-medical.ro/wp-content/uploads/2025/09/logo_patrat-300x276-1.png"
-          alt="Complex Vraja Mării Logo"
-          width={80}
-          height={80}
-          className="rounded-md object-contain"
-          priority
-        />
-        <div className="text-center">
-          <div className="text-lg font-semibold leading-tight">Complex Vraja Mării</div>
-          <div className="text-xs text-zinc-500">Panou administrare</div>
+    <main className="min-h-[70vh] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded object-contain" />
+            <span className="text-lg font-semibold text-zinc-800">Autentificare admin</span>
+          </Link>
         </div>
-      </div>
 
-      <Card>
-        <CardHeader><CardTitle>Autentificare admin</CardTitle></CardHeader>
-        <CardContent>
-          {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-          <form action={loginAction} className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-sm" htmlFor="email">Email</label>
-              <Input id="email" name="email" type="email" placeholder="admin@exemplu.ro" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm" htmlFor="password">Parolă</label>
-              <Input id="password" name="password" type="password" placeholder="••••••••" required />
-            </div>
-            <Button type="submit" className="w-full">Autentifică-te</Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        {hasError && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            Email sau parolă greșite.
+          </div>
+        )}
+
+        <form action={loginAction} className="space-y-4">
+          <div className="space-y-1">
+            <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              autoComplete="username"
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-zinc-400"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+              Parolă
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-zinc-400"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="mt-2 w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          >
+            Autentificare
+          </button>
+        </form>
+      </div>
+    </main>
+  )
 }
