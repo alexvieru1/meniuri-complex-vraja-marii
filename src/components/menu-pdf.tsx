@@ -128,7 +128,7 @@ export default function MenuPdf({
                           <View>
                             {list.map((d) => (
                               <Text key={`${m}-${meal}-${d.id}-${d.name}`} style={styles.item}>
-                                • {toAscii(d.name)} — {d.gramaj}g
+                                • {toAscii(d.name)}—{d.gramaj}g
                               </Text>
                             ))}
                           </View>
