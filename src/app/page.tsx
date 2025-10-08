@@ -101,17 +101,16 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/dishes`,
-          {
-            cache: "no-store",
-          }
-        );
-        if (res.ok) {
-          const data = (await res.json()) as Dish[];
-          setAllDishes(data);
+        const res = await fetch(`/api/dishes`, { cache: 'no-store' })
+        if (!res.ok) {
+          console.error('Failed to load dishes', res.status, await res.text())
+          return
         }
-      } catch (_) {}
+        const data = (await res.json()) as Dish[]
+        setAllDishes(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error('Error fetching dishes', err)
+      }
     })();
   }, []);
 
