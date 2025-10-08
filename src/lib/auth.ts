@@ -1,65 +1,74 @@
-import 'server-only'
-import { cookies } from 'next/headers'
-import crypto from 'crypto'
+import "server-only";
+import { cookies } from "next/headers";
+import crypto from "crypto";
 
 type CookieOptions = {
-  httpOnly?: boolean
-  secure?: boolean
-  sameSite?: 'lax' | 'strict' | 'none'
-  path?: string
-  maxAge?: number
-  expires?: Date
-}
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: "lax" | "strict" | "none";
+  path?: string;
+  maxAge?: number;
+  expires?: Date;
+};
 
 type MutableCookies = {
-  get: (name: string) => { name: string; value: string } | undefined
-  set: (name: string, value: string, options?: CookieOptions) => void
-  delete: (name: string) => void
-}
+  get: (name: string) => { name: string; value: string } | undefined;
+  set: (name: string, value: string, options?: CookieOptions) => void;
+  delete: (name: string) => void;
+};
 
-const COOKIE_NAME = 'admin_session'
-const MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+export const COOKIE_NAME = "admin_session";
+const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 function getSecret() {
-  const secret = process.env.ADMIN_SECRET
-  if (!secret) throw new Error('ADMIN_SECRET is not set')
-  return secret
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) throw new Error("ADMIN_SECRET is not set");
+  return secret;
 }
 
 export async function createSession(email: string) {
-  const payload = JSON.stringify({ email, exp: Math.floor(Date.now()/1000) + MAX_AGE })
-  const sig = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex')
-  const token = Buffer.from(payload).toString('base64') + '.' + sig
-  const jar = cookies() as unknown as MutableCookies
+  const payload = JSON.stringify({
+    email,
+    exp: Math.floor(Date.now() / 1000) + MAX_AGE,
+  });
+  const sig = crypto
+    .createHmac("sha256", getSecret())
+    .update(payload)
+    .digest("hex");
+  const token = Buffer.from(payload).toString("base64") + "." + sig;
+  const jar = cookies() as unknown as MutableCookies;
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
     maxAge: MAX_AGE,
-  })
+  });
 }
 
 export async function destroySession() {
-  const jar = cookies() as unknown as MutableCookies
-  jar.delete(COOKIE_NAME)
+  const jar = cookies() as unknown as MutableCookies;
+  jar.delete(COOKIE_NAME);
 }
 
 export async function getSession(): Promise<{ email: string } | null> {
-  const jar = cookies() as unknown as MutableCookies
-  const raw = jar.get(COOKIE_NAME)?.value
-  if (!raw) return null
-  const [b64, sig] = raw.split('.')
-  if (!b64 || !sig) return null
-  const payload = Buffer.from(b64, 'base64').toString()
-  const expected = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex')
-  if (sig !== expected) return null
-  let data: { email: string; exp: number }
+  const jar = cookies() as unknown as MutableCookies;
+  const raw = jar.get(COOKIE_NAME)?.value;
+  if (!raw) return null;
+  const [b64, sig] = raw.split(".");
+  if (!b64 || !sig) return null;
+  const payload = Buffer.from(b64, "base64").toString();
+  const expected = crypto
+    .createHmac("sha256", getSecret())
+    .update(payload)
+    .digest("hex");
+  if (sig !== expected) return null;
+  let data: { email: string; exp: number };
   try {
-    data = JSON.parse(payload) as { email: string; exp: number }
+    data = JSON.parse(payload) as { email: string; exp: number };
   } catch {
-    return null
+    return null;
   }
-  if (data.exp * 1000 < Date.now()) return null
-  return { email: data.email }
+  if (data.exp * 1000 < Date.now()) return null;
+  return { email: data.email };
 }
