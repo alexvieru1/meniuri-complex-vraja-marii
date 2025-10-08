@@ -9,10 +9,7 @@ type CookieOptions = {
   path?: string;
   maxAge?: number;
   expires?: Date;
-};
-
-type CookieDeleteOptions = {
-  path?: string;
+  domain?: string;
 };
 
 export const COOKIE_NAME = "admin_session";
@@ -24,18 +21,53 @@ function getSecret() {
   return secret;
 }
 
-export function getCookieOptions(): CookieOptions {
+function normalizeDomain(value: string | undefined) {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "localhost") return undefined;
+  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
+  return withoutProtocol.split(":")[0] || undefined;
+}
+
+function resolveCookieDomain(request?: Request) {
+  const fromEnv =
+    normalizeDomain(process.env.COOKIE_DOMAIN) ||
+    normalizeDomain(process.env.ADMIN_COOKIE_DOMAIN) ||
+    normalizeDomain(process.env.NEXT_PUBLIC_COOKIE_DOMAIN) ||
+    normalizeDomain(process.env.NEXT_PUBLIC_BASE_URL);
+  if (fromEnv) return fromEnv;
+
+  if (!request) return undefined;
+  try {
+    const { hostname } = new URL(request.url);
+    if (!hostname || hostname === "localhost") return undefined;
+    return hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getCookieOptions(request?: Request): CookieOptions {
   const base: CookieOptions = {
-    httpOnly: false,
+    httpOnly: true,
+    sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE,
     expires: new Date(Date.now() + MAX_AGE * 1000),
   };
+  if (process.env.NODE_ENV === "production") {
+    base.secure = true;
+  }
+  const domain = resolveCookieDomain(request);
+  if (domain) base.domain = domain;
   return base;
 }
 
-export function getCookieDeleteOptions(): CookieDeleteOptions {
-  return { path: "/" };
+export function getCookieDeleteOptions(request?: Request): CookieOptions {
+  const options: CookieOptions = { path: "/" };
+  const domain = resolveCookieDomain(request);
+  if (domain) options.domain = domain;
+  return options;
 }
 
 function signPayload(payload: string) {
@@ -54,17 +86,16 @@ export function createSessionToken(email: string) {
   return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
-export async function createSession(email: string) {
+export async function createSession(email: string, request?: Request) {
   const token = createSessionToken(email);
   const jar = await cookies();
-  jar.set(COOKIE_NAME, token, getCookieOptions());
+  jar.set(COOKIE_NAME, token, getCookieOptions(request));
   return token;
 }
 
-export async function destroySession() {
+export async function destroySession(request?: Request) {
   const jar = await cookies();
-  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() };
-  jar.delete(deletion);
+  jar.delete({ name: COOKIE_NAME, ...getCookieDeleteOptions(request) });
 }
 
 export async function getSession(): Promise<{ email: string } | null> {

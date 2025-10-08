@@ -33,10 +33,10 @@ export async function GET() {
 }
 
 // Optional: allow logging out by calling DELETE /api/admin/session
-export async function DELETE() {
-  await destroySession()
+export async function DELETE(request: Request) {
+  await destroySession(request)
   const res = new NextResponse(null, { status: 204 })
-  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() }
+  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions(request) }
   res.cookies.delete(deletion)
   return withNoStore(res)
 }

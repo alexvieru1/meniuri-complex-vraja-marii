@@ -6,13 +6,13 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   // clear the cookie
-  await destroySession();
+  await destroySession(request);
 
   // Redirect to /admin/login on the SAME origin as the request
   // (works on localhost and on Vercel)
   const url = new URL("/admin/login", request.url);
   const res = NextResponse.redirect(url);
-  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() };
+  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions(request) };
   res.cookies.delete(deletion);
   res.headers.set("Cache-Control", "no-store");
   res.headers.set("Vary", "Cookie");

@@ -24,8 +24,8 @@ export async function POST(request: Request) {
     return redirectTo("/admin/login?e=1", request, 303);
   }
 
-  const token = await createSession(email);
+  const token = await createSession(email, request);
   const res = redirectTo("/admin/dishes", request, 303);
-  res.cookies.set(COOKIE_NAME, token, getCookieOptions());
+  res.cookies.set(COOKIE_NAME, token, getCookieOptions(request));
   return res;
 }
