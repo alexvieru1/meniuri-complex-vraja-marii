@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { getSession, destroySession, COOKIE_NAME } from '@/lib/auth'
+import { getSession, destroySession, COOKIE_NAME, getCookieDeleteOptions } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,5 +36,6 @@ export async function GET() {
 export async function DELETE() {
   await destroySession()
   const res = new NextResponse(null, { status: 204 })
+  res.cookies.delete(COOKIE_NAME, getCookieDeleteOptions())
   return withNoStore(res)
 }

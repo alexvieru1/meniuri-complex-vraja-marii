@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { destroySession } from "@/lib/auth";
+import { destroySession, COOKIE_NAME, getCookieDeleteOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export async function GET(request: Request) {
   // (works on localhost and on Vercel)
   const url = new URL("/admin/login", request.url);
   const res = NextResponse.redirect(url);
+  res.cookies.delete(COOKIE_NAME, getCookieDeleteOptions());
   res.headers.set("Cache-Control", "no-store");
   res.headers.set("Vary", "Cookie");
   return res;
