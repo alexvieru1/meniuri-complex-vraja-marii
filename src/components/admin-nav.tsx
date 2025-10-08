@@ -45,7 +45,7 @@ export default function AdminNav() {
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="http://asclepios-medical.ro/wp-content/uploads/2025/09/logo_patrat-300x276-1.png"
+            src="/logo.png"
             alt="Logo"
             width={24}
             height={24}
