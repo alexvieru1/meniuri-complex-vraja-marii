@@ -14,7 +14,7 @@ const PdfDownload = dynamic<PdfDownloadProps>(
   {
     ssr: false,
     loading: () => (
-      <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+      <Button disabled className="flex-1 py-3 text-sm font-medium disabled:bg-primary disabled:text-primary-foreground disabled:hover:bg-primary disabled:hover:text-primary-foreground">
         Descarcă PDF
       </Button>
     ),
@@ -323,7 +323,7 @@ export default function Home() {
               {mounted ? (
                 <Suspense
                   fallback={
-                    <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+                    <Button disabled className="flex-1 py-3 text-sm font-medium disabled:bg-primary disabled:text-primary-foreground disabled:hover:bg-primary disabled:hover:text-primary-foreground">
                       Descarcă PDF
                     </Button>
                   }
@@ -331,7 +331,7 @@ export default function Home() {
                   <PdfDownload date={date} menu={menu} />
                 </Suspense>
               ) : (
-                <Button variant="outline" disabled className="flex-1 py-3 text-sm font-medium">
+                <Button disabled className="flex-1 py-3 text-sm font-medium disabled:bg-primary disabled:text-primary-foreground disabled:hover:bg-primary disabled:hover:text-primary-foreground">
                   Descarcă PDF
                 </Button>
               )}
