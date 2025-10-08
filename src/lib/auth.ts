@@ -9,40 +9,14 @@ type CookieOptions = {
   path?: string;
   maxAge?: number;
   expires?: Date;
-  domain?: string;
 };
 
 type CookieDeleteOptions = {
   path?: string;
-  domain?: string;
 };
 
 export const COOKIE_NAME = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-function resolveCookieDomain() {
-  const configured =
-    process.env.COOKIE_DOMAIN ||
-    process.env.ADMIN_COOKIE_DOMAIN ||
-    process.env.NEXT_PUBLIC_COOKIE_DOMAIN ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "";
-  if (!configured) return undefined;
-
-  let host = configured.trim();
-  if (host.startsWith("http://") || host.startsWith("https://")) {
-    try {
-      host = new URL(host).hostname;
-    } catch {
-      return undefined;
-    }
-  }
-  if (!host || host === "localhost") return undefined;
-  if (host.includes(":")) host = host.split(":")[0];
-  return host || undefined;
-}
-
-const COOKIE_DOMAIN = resolveCookieDomain();
 
 function getSecret() {
   const secret = process.env.ADMIN_SECRET;
@@ -52,19 +26,16 @@ function getSecret() {
 
 export function getCookieOptions(): CookieOptions {
   const base: CookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    httpOnly: false,
     path: "/",
     maxAge: MAX_AGE,
     expires: new Date(Date.now() + MAX_AGE * 1000),
   };
-  if (COOKIE_DOMAIN) base.domain = COOKIE_DOMAIN;
   return base;
 }
 
 export function getCookieDeleteOptions(): CookieDeleteOptions {
-  return COOKIE_DOMAIN ? { path: "/", domain: COOKIE_DOMAIN } : { path: "/" };
+  return { path: "/" };
 }
 
 function signPayload(payload: string) {
