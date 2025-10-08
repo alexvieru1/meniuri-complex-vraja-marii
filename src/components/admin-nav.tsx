@@ -12,7 +12,10 @@ export default function AdminNav() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const res = await fetch("/api/admin/session", { cache: "no-store" });
+        const res = await fetch("/api/admin/session", {
+          cache: "no-store",
+          credentials: "include",
+        });
         setLoggedIn(res.ok);
       } catch {
         setLoggedIn(false);
@@ -25,7 +28,10 @@ export default function AdminNav() {
 
   useEffect(() => {
     const onFocus = () => {
-      fetch("/api/admin/session", { cache: "no-store" })
+      fetch("/api/admin/session", {
+        cache: "no-store",
+        credentials: "include",
+      })
         .then((r) => setLoggedIn(r.ok))
         .catch(() => setLoggedIn(false));
     };

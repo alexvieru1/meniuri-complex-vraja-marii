@@ -37,7 +37,10 @@ export default function DishesPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/admin/session", { cache: "no-store" });
+        const res = await fetch("/api/admin/session", {
+          cache: "no-store",
+          credentials: "include",
+        });
         if (!res.ok) window.location.href = "/admin/login";
       } catch {
         window.location.href = "/admin/login";
@@ -50,7 +53,10 @@ export default function DishesPage() {
   const [editGramaj, setEditGramaj] = useState<string>("");
 
   async function load() {
-    const res = await fetch("/api/dishes", { cache: "no-store" });
+    const res = await fetch("/api/dishes", {
+      cache: "no-store",
+      credentials: "include",
+    });
     const data = (await res.json()) as Dish[];
     setDishes(data);
   }
@@ -72,6 +78,7 @@ export default function DishesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, gramaj: Number(gramaj) }),
+        credentials: "include",
       });
       setName("");
       setGramaj("");
@@ -81,7 +88,10 @@ export default function DishesPage() {
 
   async function handleDelete(id: number) {
     startTransition(async () => {
-      await fetch(`/api/dishes/${id}`, { method: "DELETE" });
+      await fetch(`/api/dishes/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       await load();
     });
   }
@@ -99,6 +109,7 @@ export default function DishesPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, gramaj: Number(editGramaj) }),
+        credentials: "include",
       });
       setEditingId(null);
       setEditName("");
