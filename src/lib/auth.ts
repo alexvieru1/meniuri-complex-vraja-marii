@@ -1,3 +1,4 @@
+import 'server-only'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
@@ -14,7 +15,7 @@ export async function createSession(email: string) {
   const payload = JSON.stringify({ email, exp: Math.floor(Date.now()/1000) + MAX_AGE })
   const sig = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex')
   const token = Buffer.from(payload).toString('base64') + '.' + sig
-  const jar = await cookies()
+  const jar = cookies() as unknown as { get: (name: string) => { name: string; value: string } | undefined; set: (...args: any[]) => void; delete: (name: string) => void }
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -25,12 +26,12 @@ export async function createSession(email: string) {
 }
 
 export async function destroySession() {
-  const jar = await cookies()
+  const jar = cookies() as unknown as { get: (name: string) => { name: string; value: string } | undefined; set: (...args: any[]) => void; delete: (name: string) => void }
   jar.delete(COOKIE_NAME)
 }
 
 export async function getSession(): Promise<{ email: string } | null> {
-  const jar = await cookies()
+  const jar = cookies() as unknown as { get: (name: string) => { name: string; value: string } | undefined; set: (...args: any[]) => void; delete: (name: string) => void }
   const raw = jar.get(COOKIE_NAME)?.value
   if (!raw) return null
   const [b64, sig] = raw.split('.')
