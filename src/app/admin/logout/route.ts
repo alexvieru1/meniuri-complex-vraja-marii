@@ -12,7 +12,8 @@ export async function GET(request: Request) {
   // (works on localhost and on Vercel)
   const url = new URL("/admin/login", request.url);
   const res = NextResponse.redirect(url);
-  res.cookies.delete(COOKIE_NAME, getCookieDeleteOptions());
+  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() };
+  res.cookies.delete(deletion);
   res.headers.set("Cache-Control", "no-store");
   res.headers.set("Vary", "Cookie");
   return res;

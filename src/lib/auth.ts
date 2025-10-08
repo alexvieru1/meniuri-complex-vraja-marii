@@ -92,7 +92,8 @@ export async function createSession(email: string) {
 
 export async function destroySession() {
   const jar = await cookies();
-  jar.delete({ name: COOKIE_NAME, ...getCookieDeleteOptions() });
+  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() };
+  jar.delete(deletion);
 }
 
 export async function getSession(): Promise<{ email: string } | null> {

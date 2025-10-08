@@ -36,6 +36,7 @@ export async function GET() {
 export async function DELETE() {
   await destroySession()
   const res = new NextResponse(null, { status: 204 })
-  res.cookies.delete(COOKIE_NAME, getCookieDeleteOptions())
+  const deletion = { name: COOKIE_NAME, ...getCookieDeleteOptions() }
+  res.cookies.delete(deletion)
   return withNoStore(res)
 }
