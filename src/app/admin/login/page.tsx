@@ -1,17 +1,30 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { loginAction } from './actions'
+import Image from "next/image";
+import Link from "next/link";
 
-export default function AdminLoginPage({ searchParams }: { searchParams?: { e?: string } }) {
-  const hasError = Boolean(searchParams?.e)
+export const runtime = "nodejs";
+
+export default function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams?: { e?: string };
+}) {
+  const hasError = Boolean(searchParams?.e);
 
   return (
     <main className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-center gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded object-contain" />
-            <span className="text-lg font-semibold text-zinc-800">Autentificare admin</span>
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={32}
+              height={32}
+              className="rounded object-contain"
+            />
+            <span className="text-lg font-semibold text-zinc-800">
+              Autentificare admin
+            </span>
           </Link>
         </div>
 
@@ -21,9 +34,17 @@ export default function AdminLoginPage({ searchParams }: { searchParams?: { e?: 
           </div>
         )}
 
-        <form action={loginAction} className="space-y-4">
+        <form
+          action="/api/admin/login"
+          method="POST"
+          className="space-y-4"
+          noValidate
+        >
           <div className="space-y-1">
-            <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-zinc-700"
+            >
               Email
             </label>
             <input
@@ -37,7 +58,10 @@ export default function AdminLoginPage({ searchParams }: { searchParams?: { e?: 
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-zinc-700"
+            >
               Parolă
             </label>
             <input
@@ -59,5 +83,5 @@ export default function AdminLoginPage({ searchParams }: { searchParams?: { e?: 
         </form>
       </div>
     </main>
-  )
+  );
 }

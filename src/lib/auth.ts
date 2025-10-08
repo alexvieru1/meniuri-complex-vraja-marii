@@ -61,8 +61,8 @@ export async function getSession(): Promise<{ email: string } | null> {
     .createHmac("sha256", getSecret())
     .update(payload)
     .digest("hex");
-  const sigBuf = Buffer.from(sig);
-  const expectedBuf = Buffer.from(expected);
+  const sigBuf = Buffer.from(sig, "hex");
+  const expectedBuf = Buffer.from(expected, "hex");
   if (
     sigBuf.length !== expectedBuf.length ||
     !crypto.timingSafeEqual(sigBuf, expectedBuf)
