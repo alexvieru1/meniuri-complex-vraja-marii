@@ -11,11 +11,7 @@ type CookieOptions = {
   expires?: Date;
 };
 
-type MutableCookies = {
-  get: (name: string) => { name: string; value: string } | undefined;
-  set: (name: string, value: string, options?: CookieOptions) => void;
-  delete: (name: string) => void;
-};
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
 
 export const COOKIE_NAME = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -36,7 +32,7 @@ export async function createSession(email: string) {
     .update(payload)
     .digest("hex");
   const token = Buffer.from(payload).toString("base64") + "." + sig;
-  const jar = cookies() as unknown as MutableCookies;
+  const jar = (await cookies()) as CookieStore;
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -47,12 +43,12 @@ export async function createSession(email: string) {
 }
 
 export async function destroySession() {
-  const jar = cookies() as unknown as MutableCookies;
+  const jar = (await cookies()) as CookieStore;
   jar.delete(COOKIE_NAME);
 }
 
 export async function getSession(): Promise<{ email: string } | null> {
-  const jar = cookies() as unknown as MutableCookies;
+  const jar = (await cookies()) as CookieStore;
   const raw = jar.get(COOKIE_NAME)?.value;
   if (!raw) return null;
   const [b64, sig] = raw.split(".");
