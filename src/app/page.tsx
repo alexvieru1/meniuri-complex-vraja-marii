@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from 'next/dynamic'
+// near the imports in src/app/page.tsx
+type PdfDownloadProps = { date: string; menu: Record<MenuKey, Record<MealKey, Dish[]>> }
+
+// use a relative import so TS definitely finds the file
+const PdfDownload = dynamic<PdfDownloadProps>(() => import('../components/pdf-download'), { ssr: false })
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { IconSearch, IconTrash, IconPlus } from "@tabler/icons-react";
+import { useReactToPrint } from 'react-to-print'
 
 // --- Types ---
 export type Dish = { id: number; name: string; gramaj: number };
@@ -40,6 +47,12 @@ const MENU_STYLE: Record<MenuKey, { bg: string; border: string }> = {
   },
 };
 
+const MENU_PRINT: Record<MenuKey, { bg: string; border: string }> = {
+  normal: { bg: '#FEF3C7', border: '#FCD34D' },      // yellow-100 / yellow-300
+  diabetic: { bg: '#FFE4E6', border: '#FDA4AF' },    // rose-100 / rose-300
+  hepato_gastro: { bg: '#E0F2FE', border: '#7DD3FC' } // sky-100 / sky-300
+}
+
 const LIMITS: Record<MealKey, number> = {
   mic_dejun: 10,
   pranz: 5,
@@ -70,6 +83,13 @@ export default function Home() {
       hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
     })
   );
+
+  const printableRef = useRef<HTMLDivElement>(null)
+  const handlePrint = useReactToPrint({
+    contentRef: printableRef,
+    documentTitle: `Meniuri_${date || new Date().toISOString().slice(0,10)}`,
+    pageStyle: `@page { size: A4 landscape; margin: 12mm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`,
+  })
 
   // Load dishes from API (authorized endpoint)
   useEffect(() => {
@@ -251,7 +271,7 @@ export default function Home() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-800">
-              Generator meniuri zilnice
+              Meniul zilei
             </h1>
             <p className="text-sm text-zinc-500">
               Selectează data, caută feluri și adaugă-le la mesele zilei.
@@ -262,20 +282,22 @@ export default function Home() {
         {/* Date + actions */}
         <Card className="rounded-xl shadow-sm">
           <CardContent className="grid gap-3 pt-6 sm:grid-cols-3">
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-1">
               <label className="mb-1 block text-sm text-zinc-600">
                 Data meniului
               </label>
               <Input
+                className="max-w-sm"
                 placeholder="ex: 8 Octombrie 2025 sau 2025-10-08"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-6 sm:gap-2">
-              <Button className="flex-1 py-3 text-sm font-medium">
-                Previzualizează PDF
+              <Button onClick={handlePrint} className="flex-1 py-3 text-sm font-medium">
+                Previzualizează / Exportă PDF
               </Button>
+              <PdfDownload date={date} menu={menu} />
               <Button
                 variant="outline"
                 className="flex-1 py-3 text-sm font-medium"
@@ -284,7 +306,7 @@ export default function Home() {
                     normal: { mic_dejun: [], pranz: [], cina: [] },
                     diabetic: { mic_dejun: [], pranz: [], cina: [] },
                     hepato_gastro: { mic_dejun: [], pranz: [], cina: [] },
-                  });
+                  })
                 }}
               >
                 Resetează
@@ -298,6 +320,52 @@ export default function Home() {
           {(Object.keys(MENU_LABEL) as MenuKey[]).map((m) => (
             <MenuCard key={m} menuKey={m} />
           ))}
+        </div>
+        {/* Printable area (kept off-screen for screen view, fully styled for print) */}
+        <div
+          ref={printableRef}
+          aria-hidden
+          className="pointer-events-none absolute -left-[9999px] top-0 w-[1122px] print:static print:w-auto print:p-0"
+          style={{ backgroundColor: '#ffffff', color: '#111827' }}
+        >
+          <div className="mx-auto space-y-4 p-4 print:p-0">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-semibold">Meniul zilei</h1>
+              <div className="text-sm" style={{ color: '#374151' }}>Data: {date || '___'} </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {(Object.keys(MENU_LABEL) as MenuKey[]).map((m) => (
+                <div
+                  key={m}
+                  className="rounded-xl print:shadow-none"
+                  style={{ backgroundColor: MENU_PRINT[m].bg, border: `1px solid ${MENU_PRINT[m].border}` }}
+                >
+                  <div className="p-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                    <div className="text-base font-semibold">{MENU_LABEL[m]}</div>
+                  </div>
+                  <div className="grid gap-3 p-3">
+                    {(Object.keys(MEAL_LABEL) as MealKey[]).map((meal) => (
+                      <div key={meal} className="">
+                        <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide">{MEAL_LABEL[meal]}</div>
+                        {menu[m][meal].length === 0 ? (
+                          <div className="text-xs" style={{ color: '#4B5563' }}>—</div>
+                        ) : (
+                          <ul className="ml-4 list-disc space-y-1">
+                            {menu[m][meal].map((d) => (
+                              <li key={d.id} className="text-sm leading-tight">
+                                {d.name} — {d.gramaj} g
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
