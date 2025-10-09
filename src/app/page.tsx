@@ -24,8 +24,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { IconSearch, IconTrash, IconPlus } from "@tabler/icons-react";
+import { IconSearch, IconTrash, IconPlus, IconCalendar } from "@tabler/icons-react";
 import { useReactToPrint } from "react-to-print";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { format, startOfToday } from "date-fns";
+import { ro } from "date-fns/locale";
 
 // --- Types ---
 export type Dish = { id: number; name: string; gramaj: number };
@@ -84,9 +88,22 @@ const normalizeRo = (s: string) =>
     .replace(/â/g, "a")
     .replace(/î/g, "i");
 
+const formatRomanianDate = (value: Date) => {
+  const base = format(value, "d MMMM yyyy", { locale: ro });
+  const parts = base.split(" ");
+  if (parts.length < 3) return base;
+  const [day, month, ...rest] = parts;
+  const capitalizedMonth =
+    month.charAt(0).toUpperCase() + month.slice(1);
+  return [day, capitalizedMonth, ...rest].join(" ");
+};
+
 export default function Home() {
   const [date, setDate] = useState(""); // ex: 2025-10-08 or free text like "8 Octombrie 2025"
   const [allDishes, setAllDishes] = useState<Dish[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const today = startOfToday();
 
   // Menu state: menu -> meal -> Dish[]
   const [menu, setMenu] = useState<Record<MenuKey, Record<MealKey, Dish[]>>>(
@@ -301,17 +318,44 @@ export default function Home() {
 
         {/* Date + actions */}
         <Card className="rounded-xl shadow-sm">
-          <CardContent className="grid gap-3 pt-6 sm:grid-cols-3">
+        <CardContent className="grid gap-3 pt-6 sm:grid-cols-3">
             <div className="sm:col-span-1">
               <label className="mb-1 block text-sm text-zinc-600">
                 Data meniului
               </label>
-              <Input
-                className="max-w-sm"
-                placeholder="ex: 8 Octombrie 2025 sau 2025-10-08"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex w-full max-w-sm items-center justify-between gap-2 text-left font-normal"
+                  >
+                    <span className={`flex-1 truncate ${date ? "" : "text-zinc-500"}`}>
+                      {date || "Selectează data"}
+                    </span>
+                    <IconCalendar size={18} className="text-zinc-500" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    defaultMonth={selectedDate ?? today}
+                    onSelect={(day) => {
+                      if (!day) {
+                        setSelectedDate(undefined);
+                        setDate("");
+                        return;
+                      }
+                      setSelectedDate(day);
+                      setDate(formatRomanianDate(day));
+                      setCalendarOpen(false);
+                    }}
+                    locale={ro}
+                    initialFocus
+                    disabled={{ before: today }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-6 sm:gap-2">
               <Button
