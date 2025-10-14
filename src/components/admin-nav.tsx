@@ -61,24 +61,25 @@ export default function AdminNav() {
         </Link>
 
         <nav className="flex items-center gap-2">
-          <Link
-            href="/admin/dishes"
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              pathname === "/admin/dishes"
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-600 hover:bg-zinc-100"
-            }`}
-          >
-            Feluri de mâncare
-          </Link>
-
           {loggedIn ? (
-            <Link
-              href="/admin/logout"
-              className="rounded-md px-3 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
-            >
-              Deconectare
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin/dishes"
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  pathname === "/admin/dishes"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                Feluri de mâncare
+              </Link>
+              <Link
+                href="/admin/logout"
+                className="rounded-md px-3 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+              >
+                Deconectare
+              </Link>
+            </div>
           ) : (
             <Link
               href="/admin/login"

@@ -8,6 +8,7 @@ export type Dish = {
   name: string;
   gramaj: number;
   unit?: MaybeUnitValue;
+  displayGramaj?: string | null;
 };
 export type MealKey = "mic_dejun" | "pranz" | "cina";
 export type MenuKey = "normal" | "diabetic" | "hepato_gastro";
@@ -178,7 +179,7 @@ export default function MenuPdf({
                                       : styles.item
                                   }
                                 >
-                                  • {toAscii(d.name)} — {d.gramaj} {formatUnitShort(d.unit)}
+                                  • {toAscii(d.name)} — {(d.displayGramaj && d.displayGramaj.trim()) ? d.displayGramaj.trim() : d.gramaj} {formatUnitShort(d.unit)}
                                 </Text>
                               ))}
                             </View>

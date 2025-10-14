@@ -33,6 +33,7 @@ type Dish = {
   name: string;
   gramaj: number;
   unit: UnitValue;
+  displayGramaj?: string | null;
 };
 
 export default function DishesPage() {
@@ -52,6 +53,7 @@ export default function DishesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [name, setName] = useState("");
   const [gramaj, setGramaj] = useState<string>("");
+  const [displayGramaj, setDisplayGramaj] = useState("");
   const [unit, setUnit] = useState<UnitValue>(DEFAULT_UNIT);
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -73,6 +75,7 @@ export default function DishesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editGramaj, setEditGramaj] = useState<string>("");
+  const [editDisplayGramaj, setEditDisplayGramaj] = useState("");
   const [editUnit, setEditUnit] = useState<UnitValue>(DEFAULT_UNIT);
 
   async function load() {
@@ -109,6 +112,7 @@ export default function DishesPage() {
           name: name.trim(),
           gramaj: Math.round(val),
           unit,
+          displayGramaj: displayGramaj.trim() || null,
         }),
         credentials: "include",
       });
@@ -116,6 +120,7 @@ export default function DishesPage() {
         toast.success("Fel adăugat.");
         setName("");
         setGramaj("");
+        setDisplayGramaj("");
         setUnit(DEFAULT_UNIT);
         await load();
       } else {
@@ -144,7 +149,16 @@ export default function DishesPage() {
     setEditingId(d.id);
     setEditName(d.name);
     setEditGramaj(String(d.gramaj));
+    setEditDisplayGramaj(d.displayGramaj || "");
     setEditUnit(d.unit);
+  }
+
+  function resetEdit() {
+    setEditingId(null);
+    setEditName("");
+    setEditGramaj("");
+    setEditDisplayGramaj("");
+    setEditUnit(DEFAULT_UNIT);
   }
 
   async function handleSave(id: number) {
@@ -162,6 +176,7 @@ export default function DishesPage() {
           name: editName.trim(),
           gramaj: Math.round(val),
           unit: editUnit,
+          displayGramaj: editDisplayGramaj.trim() || null,
         }),
         credentials: "include",
       });
@@ -170,6 +185,7 @@ export default function DishesPage() {
         setEditingId(null);
         setEditName("");
         setEditGramaj("");
+        setEditDisplayGramaj("");
         setEditUnit(DEFAULT_UNIT);
         await load();
       } else {
@@ -204,46 +220,67 @@ export default function DishesPage() {
               Adaugă un fel de mâncare
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2 sm:grid-cols-5">
-            <Input
-              placeholder="Nume (ex: Supă de pui)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
-              }}
-              className="sm:col-span-2"
-            />
-            <Input
-              type="number"
-              inputMode="numeric"
-              placeholder="Gramaj"
-              value={gramaj}
-              onChange={(e) => setGramaj(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
-              }}
-            />
-            <Select value={unit} onValueChange={(v) => setUnit(v as UnitValue)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Unitate" />
-              </SelectTrigger>
-              <SelectContent>
-                {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={handleCreate}
-              disabled={!name || !gramaj || isPending}
-              className="inline-flex items-center justify-center gap-2"
-            >
-              <IconPlus size={18} />
-              Adaugă
-            </Button>
+          <CardContent className="grid gap-3 md:grid-cols-5 items-end">
+            <div className="md:col-span-5">
+              <Input
+                placeholder="Nume (ex: Supă de pui)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreate();
+                }}
+                className="sm:col-span-2"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="Gramaj (număr)"
+                value={gramaj}
+                onChange={(e) => setGramaj(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreate();
+                }}
+              />
+            </div>
+            <div className="md:col-span-3">
+              <Input
+                placeholder="ex: 50/50/20"
+                value={displayGramaj}
+                onChange={(e) => setDisplayGramaj(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreate();
+                }}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Select
+                value={unit}
+                onValueChange={(v) => setUnit(v as UnitValue)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Unitate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-12 flex justify-end">
+              <Button
+                onClick={handleCreate}
+                disabled={!name || !gramaj || isPending}
+                className="inline-flex items-center justify-center gap-2"
+              >
+                <IconPlus size={18} />
+                Adaugă
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -281,71 +318,108 @@ export default function DishesPage() {
                   >
                     <div className="w-full">
                       {editingId === d.id ? (
-                        <div className="grid w-full gap-2 sm:grid-cols-4">
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSave(d.id);
-                            }}
-                            className="sm:col-span-2"
-                          />
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            value={editGramaj}
-                            onChange={(e) => setEditGramaj(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSave(d.id);
-                            }}
-                          />
-                          <Select value={editUnit} onValueChange={(v) => setEditUnit(v as UnitValue)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Unitate" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        <div className="grid gap-2 md:grid-cols-12 items-end">
+                          {/* Nume */}
+                          <div className="md:col-span-5">
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSave(d.id);
+                                if (e.key === "Escape") resetEdit();
+                              }}
+                              className="sm:col-span-2"
+                            />
+                          </div>
+                          {/* Gramaj */}
+                          <div className="md:col-span-2">
+                            <Input
+                              type="number"
+                              inputMode="numeric"
+                              value={editGramaj}
+                              onChange={(e) => setEditGramaj(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSave(d.id);
+                                if (e.key === "Escape") resetEdit();
+                              }}
+                            />
+                          </div>
+                          {/* Afișare gramaj */}
+                          <div className="md:col-span-3">
+                            <Input
+                              placeholder="Afișare gramaj"
+                              value={editDisplayGramaj}
+                              onChange={(e) => setEditDisplayGramaj(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSave(d.id);
+                                if (e.key === "Escape") resetEdit();
+                              }}
+                            />
+                          </div>
+                          {/* Unitate */}
+                          <div className="md:col-span-2">
+                            <Select
+                              value={editUnit}
+                              onValueChange={(v) => setEditUnit(v as UnitValue)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Unitate" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {/* Actions (bottom-right) */}
+                          <div className="md:col-span-12 flex justify-end gap-2 pt-1">
+                            {(() => {
+                              const val = Number(String(editGramaj).replace(",", ".").trim());
+                              const numericValid = Number.isFinite(val) && val > 0;
+                              const isDirty =
+                                editName.trim() !== d.name.trim() ||
+                                Math.round(val) !== d.gramaj ||
+                                (editDisplayGramaj.trim() || null) !== (d.displayGramaj || null) ||
+                                editUnit !== d.unit;
+                              return (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSave(d.id)}
+                                    disabled={!numericValid || !isDirty || isPending}
+                                    className="gap-2"
+                                  >
+                                    <IconCheck size={16} /> Salvează
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={resetEdit}
+                                    className="gap-2"
+                                  >
+                                    <IconX size={16} /> Anulează
+                                  </Button>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
                       ) : (
                         <div>
                           <p className="font-medium text-zinc-800">{d.name}</p>
                           <p className="text-sm text-zinc-500">
-                            {`${d.gramaj} ${unitLabel(d.unit)}`}
+                            {d.displayGramaj
+                              ? `${d.displayGramaj} ${unitLabel(d.unit)}`
+                              : `${d.gramaj} ${unitLabel(d.unit)}`}
                           </p>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {editingId === d.id ? (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSave(d.id)}
-                            className="gap-2"
-                          >
-                            <IconCheck size={16} /> Salvează
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditName("");
-                              setEditGramaj("");
-                              setEditUnit(DEFAULT_UNIT);
-                            }}
-                            className="gap-2"
-                          >
-                            <IconX size={16} /> Anulează
-                          </Button>
-                        </>
-                      ) : (
+                    <div className="md:col-span-12 flex justify-end gap-2">
+                      {editingId === d.id ? null : (
                         <>
                           <Button
                             variant="outline"

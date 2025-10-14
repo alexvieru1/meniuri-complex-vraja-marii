@@ -93,13 +93,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (!dishId) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const body = await req.json();
-    const { name, gramaj, unit } = body as {
+    const { name, gramaj, unit, displayGramaj } = body as {
       name?: string;
       gramaj?: number | string;
       unit?: Unit | string;
+      displayGramaj?: string | null;
     };
 
-    const data: { name?: string; gramaj?: number; unit?: Unit } = {};
+    const data: { name?: string; gramaj?: number; unit?: Unit; displayGramaj?: string | null } = {};
 
     if (typeof name === 'string' && name.trim()) {
       data.name = name.trim();
@@ -123,6 +124,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         );
       }
       data.unit = norm;
+    }
+
+    if (typeof displayGramaj !== 'undefined') {
+      const s = (displayGramaj ?? '').toString().trim();
+      data.displayGramaj = s.length ? s : null;
     }
 
     if (Object.keys(data).length === 0) {

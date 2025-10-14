@@ -59,6 +59,10 @@ export async function POST(req: Request) {
   const name = String(body?.name ?? "").trim();
   const gramajNum = Number(body?.gramaj);
   const unitIn = body?.unit as string | undefined;
+  const displayGramaj: string | null =
+    typeof body?.displayGramaj === "string"
+      ? body.displayGramaj.trim() || null
+      : null;
 
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
   if (!Number.isFinite(gramajNum) || gramajNum <= 0) {
@@ -83,6 +87,7 @@ export async function POST(req: Request) {
       name,
       gramaj: Math.trunc(gramajNum),
       unit, // normalized & guaranteed valid
+      displayGramaj, // optional pretty string like "50/50/20"
     },
   });
 

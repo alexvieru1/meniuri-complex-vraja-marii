@@ -38,6 +38,7 @@ export type Dish = {
   name: string;
   gramaj: number;
   unit?: MaybeUnitValue;
+  displayGramaj?: string | null;
 };
 const unitLabel = formatUnitShort;
 
@@ -203,7 +204,9 @@ export default function Home() {
               >
                 <div>
                   <p className="font-medium leading-none">{d.name}</p>
-                  <p className="text-xs text-zinc-500">{d.gramaj} {unitLabel(d.unit)}</p>
+                  <p className="text-xs text-zinc-500">
+                    {d.displayGramaj && d.displayGramaj.trim() ? d.displayGramaj.trim() : d.gramaj} {unitLabel(d.unit)}
+                  </p>
                 </div>
                 <Button
                   variant="destructive"
@@ -250,7 +253,9 @@ export default function Home() {
                     >
                       <div>
                         <p className="text-sm font-medium">{d.name}</p>
-                        <p className="text-xs text-zinc-500">{d.gramaj} {unitLabel(d.unit)}</p>
+                        <p className="text-xs text-zinc-500">
+                          {d.displayGramaj && d.displayGramaj.trim() ? d.displayGramaj.trim() : d.gramaj} {unitLabel(d.unit)}
+                        </p>
                       </div>
                       <Button
                         size="sm"
@@ -456,7 +461,7 @@ export default function Home() {
                           <ul className="ml-4 list-disc space-y-1">
                             {menu[m][meal].map((d) => (
                               <li key={d.id} className="text-sm leading-tight">
-                                {d.name} — {d.gramaj} {unitLabel(d.unit)}
+                                {d.name} — {(d.displayGramaj && d.displayGramaj.trim()) ? d.displayGramaj.trim() : d.gramaj} {unitLabel(d.unit)}
                               </li>
                             ))}
                           </ul>
