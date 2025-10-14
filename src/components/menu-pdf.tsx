@@ -1,64 +1,72 @@
-import React from 'react'
-import { Document, Page, StyleSheet, View, Text } from '@react-pdf/renderer'
+import React from "react";
+import { Document, Page, StyleSheet, View, Text } from "@react-pdf/renderer";
 
 // Keep types aligned with the app
-export type Dish = { id: number; name: string; gramaj: number }
-export type MealKey = 'mic_dejun' | 'pranz' | 'cina'
-export type MenuKey = 'normal' | 'diabetic' | 'hepato_gastro'
+export type Dish = {
+  id: number;
+  name: string;
+  gramaj: number;
+  unit?: "GRAM" | "MILLILITER" | "BUCATA" | null;
+};
+export type MealKey = "mic_dejun" | "pranz" | "cina";
+export type MenuKey = "normal" | "diabetic" | "hepato_gastro";
+
+const unitLabel = (u?: "GRAM" | "MILLILITER" | "BUCATA" | null) =>
+  u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
 
 const MEAL_LABEL: Record<MealKey, string> = {
-  mic_dejun: 'Mic dejun',
-  pranz: 'Prânz',
-  cina: 'Cină',
-}
+  mic_dejun: "Mic dejun",
+  pranz: "Prânz",
+  cina: "Cină",
+};
 
 const MENU_LABEL: Record<MenuKey, string> = {
-  normal: 'Normal',
-  diabetic: 'Diabetic',
-  hepato_gastro: 'Hepato-gastro-intestinal',
-}
+  normal: "Normal",
+  diabetic: "Diabetic",
+  hepato_gastro: "Hepato-gastro-intestinal",
+};
 
 // Hex palette (print-safe)
 const MENU_PRINT: Record<MenuKey, { bg: string; border: string }> = {
-  normal: { bg: '#FEF3C7', border: '#FCD34D' }, // yellow-100 / yellow-300
-  diabetic: { bg: '#FFE4E6', border: '#FDA4AF' }, // rose-100 / rose-300
-  hepato_gastro: { bg: '#E0F2FE', border: '#7DD3FC' }, // sky-100 / sky-300
-}
+  normal: { bg: "#FEF3C7", border: "#FCD34D" }, // yellow-100 / yellow-300
+  diabetic: { bg: "#FFE4E6", border: "#FDA4AF" }, // rose-100 / rose-300
+  hepato_gastro: { bg: "#E0F2FE", border: "#7DD3FC" }, // sky-100 / sky-300
+};
 
-const LONG_NAME_THRESHOLD = 28
+const LONG_NAME_THRESHOLD = 28;
 
 const toAscii = (value: string) =>
   value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/ș|ş/g, 's')
-    .replace(/Ș|Ş/g, 'S')
-    .replace(/ț|ţ/g, 't')
-    .replace(/Ț|Ţ/g, 'T')
-    .replace(/ă/g, 'a')
-    .replace(/Ă/g, 'A')
-    .replace(/â/g, 'a')
-    .replace(/Â/g, 'A')
-    .replace(/î/g, 'i')
-    .replace(/Î/g, 'I')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ș|ş/g, "s")
+    .replace(/Ș|Ş/g, "S")
+    .replace(/ț|ţ/g, "t")
+    .replace(/Ț|Ţ/g, "T")
+    .replace(/ă/g, "a")
+    .replace(/Ă/g, "A")
+    .replace(/â/g, "a")
+    .replace(/Â/g, "A")
+    .replace(/î/g, "i")
+    .replace(/Î/g, "I");
 
 const styles = StyleSheet.create({
   page: {
-    flexDirection: 'column',
+    flexDirection: "column",
     padding: 18,
     fontSize: 9.5,
-    color: '#111827',
+    color: "#111827",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
   title: { fontSize: 16, fontWeight: 700 },
-  date: { fontSize: 11, color: '#374151' },
+  date: { fontSize: 11, color: "#374151" },
   grid: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   col: {
     flex: 1,
@@ -70,7 +78,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   colTitle: { fontSize: 11, fontWeight: 700 },
   colBody: { padding: 6 },
@@ -81,9 +89,9 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 700,
     marginBottom: 1.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
-  empty: { fontSize: 8.5, color: '#4B5563' },
+  empty: { fontSize: 8.5, color: "#4B5563" },
   item: { fontSize: 9.5, marginLeft: 6, lineHeight: 1.25 },
   itemDense: {
     fontSize: 8.75,
@@ -91,20 +99,20 @@ const styles = StyleSheet.create({
     lineHeight: 1.1,
     letterSpacing: -0.05,
   },
-})
+});
 
 export default function MenuPdf({
   date,
   menu,
-  orientation = 'landscape',
+  orientation = "landscape",
 }: {
-  date: string
-  menu: Record<MenuKey, Record<MealKey, Dish[]>>
-  orientation?: 'portrait' | 'landscape'
+  date: string;
+  menu: Record<MenuKey, Record<MealKey, Dish[]>>;
+  orientation?: "portrait" | "landscape";
 }) {
-  const menuKeys: MenuKey[] = ['normal', 'diabetic', 'hepato_gastro']
-  const mealKeys: MealKey[] = ['mic_dejun', 'pranz', 'cina']
-  const displayDate = date?.trim() ? toAscii(date) : '___'
+  const menuKeys: MenuKey[] = ["normal", "diabetic", "hepato_gastro"];
+  const mealKeys: MealKey[] = ["mic_dejun", "pranz", "cina"];
+  const displayDate = date?.trim() ? toAscii(date) : "___";
 
   return (
     <Document>
@@ -120,8 +128,8 @@ export default function MenuPdf({
               (menu?.[m]?.[meal] ?? []).some(
                 (dish) => toAscii(dish.name).length >= LONG_NAME_THRESHOLD
               )
-            )
-            const columnFlex = columnHasLong ? 1.22 : 1
+            );
+            const columnFlex = columnHasLong ? 1.22 : 1;
 
             return (
               <React.Fragment key={m}>
@@ -134,7 +142,9 @@ export default function MenuPdf({
                   }}
                 >
                   <View style={styles.colHeader}>
-                    <Text style={styles.colTitle}>{toAscii(MENU_LABEL[m])}</Text>
+                    <Text style={styles.colTitle}>
+                      {toAscii(MENU_LABEL[m])}
+                    </Text>
                   </View>
                   <View
                     style={
@@ -144,19 +154,16 @@ export default function MenuPdf({
                     }
                   >
                     {mealKeys.map((meal) => {
-                      const list = menu?.[m]?.[meal] ?? []
+                      const list = menu?.[m]?.[meal] ?? [];
                       const hasLongItem = list.some(
                         (dish) =>
                           toAscii(dish.name).length >= LONG_NAME_THRESHOLD
-                      )
+                      );
                       const blockStyle = hasLongItem
                         ? [styles.mealBlock, styles.mealBlockDense]
-                        : styles.mealBlock
+                        : styles.mealBlock;
                       return (
-                        <View
-                          key={`${m}-${meal}`}
-                          style={blockStyle}
-                        >
+                        <View key={`${m}-${meal}`} style={blockStyle}>
                           <Text style={styles.mealTitle}>
                             {toAscii(MEAL_LABEL[meal])}
                           </Text>
@@ -173,13 +180,13 @@ export default function MenuPdf({
                                       : styles.item
                                   }
                                 >
-                                  • {toAscii(d.name)} — {d.gramaj}g
+                                  • {toAscii(d.name)} — {d.gramaj} {unitLabel(d.unit)}
                                 </Text>
                               ))}
                             </View>
                           )}
                         </View>
-                      )
+                      );
                     })}
                   </View>
                 </View>
@@ -187,10 +194,10 @@ export default function MenuPdf({
                   <View style={styles.colSpacer} />
                 ) : null}
               </React.Fragment>
-            )
+            );
           })}
         </View>
       </Page>
     </Document>
-  )
+  );
 }

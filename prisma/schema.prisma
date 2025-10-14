@@ -3,36 +3,36 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
-
 }
 
 model Dish {
-  id        Int      @id @default(autoincrement())
-  name      String
-  gramaj    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  items     MenuItem[]
+  id            Int        @id @default(autoincrement())
+  name          String
+  gramaj        Int
+  displayGramaj String?
+  unit          Unit       @default(GRAM)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  items         MenuItem[]
 }
 
 model DayMenu {
-  id        Int       @id @default(autoincrement())
-  dateLabel String    // ex: "8 Octombrie 2025"
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id        Int      @id @default(autoincrement())
+  dateLabel String // ex: "8 Octombrie 2025"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  menus     Menu[]
+  menus Menu[]
 }
 
 model Menu {
-  id        Int       @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   type      MenuType
   dayMenuId Int
-  dayMenu   DayMenu   @relation(fields: [dayMenuId], references: [id], onDelete: Cascade)
+  dayMenu   DayMenu    @relation(fields: [dayMenuId], references: [id], onDelete: Cascade)
   items     MenuItem[]
 }
 
@@ -42,13 +42,19 @@ enum MenuType {
   HEPATO_GASTRO_INTESTINAL
 }
 
+enum Unit {
+  GRAM
+  MILLILITER
+  BUCATA
+}
+
 model MenuItem {
-  id      Int    @id @default(autoincrement())
-  menuId  Int
-  menu    Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  meal    Meal
-  dishId  Int
-  dish    Dish   @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  id     Int  @id @default(autoincrement())
+  menuId Int
+  menu   Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  meal   Meal
+  dishId Int
+  dish   Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
 }
 
 enum Meal {

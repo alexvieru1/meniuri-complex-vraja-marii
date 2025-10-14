@@ -13,8 +13,21 @@ import {
   IconX,
   IconCheck,
 } from "@tabler/icons-react";
+import { Toaster, toast } from "sonner";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
-type Dish = { id: number; name: string; gramaj: number };
+type Dish = {
+  id: number;
+  name: string;
+  gramaj: number;
+  unit: "GRAM" | "MILLILITER" | "BUCATA";
+};
 
 export default function DishesPage() {
   const normalizeRo = (s: string) =>
@@ -28,9 +41,13 @@ export default function DishesPage() {
       .replace(/â/g, "a")
       .replace(/î/g, "i");
 
+  const unitLabel = (u: Dish["unit"]) =>
+    u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
+
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [name, setName] = useState("");
   const [gramaj, setGramaj] = useState<string>("");
+  const [unit, setUnit] = useState<Dish["unit"]>("GRAM");
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -51,6 +68,7 @@ export default function DishesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editGramaj, setEditGramaj] = useState<string>("");
+  const [editUnit, setEditUnit] = useState<Dish["unit"]>("GRAM");
 
   async function load() {
     const res = await fetch("/api/dishes", {
@@ -73,26 +91,47 @@ export default function DishesPage() {
 
   async function handleCreate() {
     if (!name || !gramaj) return;
+    const val = Number(String(gramaj).replace(",", ".").trim());
+    if (!Number.isFinite(val) || val <= 0) {
+      toast.error("Gramajul trebuie să fie un număr pozitiv.");
+      return;
+    }
     startTransition(async () => {
-      await fetch("/api/dishes", {
+      const res = await fetch("/api/dishes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gramaj: Number(gramaj) }),
+        body: JSON.stringify({
+          name: name.trim(),
+          gramaj: Math.round(val),
+          unit,
+        }),
         credentials: "include",
       });
-      setName("");
-      setGramaj("");
-      await load();
+      if (res.ok) {
+        toast.success("Fel adăugat.");
+        setName("");
+        setGramaj("");
+        setUnit("GRAM");
+        await load();
+      } else {
+        const msg = await res.text().catch(() => "");
+        toast.error(msg || "Eroare la adăugare.");
+      }
     });
   }
 
   async function handleDelete(id: number) {
     startTransition(async () => {
-      await fetch(`/api/dishes/${id}`, {
+      const res = await fetch(`/api/dishes/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
-      await load();
+      if (res.ok) {
+        toast.success("Fel șters.");
+        await load();
+      } else {
+        toast.error("Eroare la ștergere.");
+      }
     });
   }
 
@@ -100,26 +139,43 @@ export default function DishesPage() {
     setEditingId(d.id);
     setEditName(d.name);
     setEditGramaj(String(d.gramaj));
+    setEditUnit(d.unit);
   }
 
   async function handleSave(id: number) {
     if (!editName || !editGramaj) return;
+    const val = Number(String(editGramaj).replace(",", ".").trim());
+    if (!Number.isFinite(val) || val <= 0) {
+      toast.error("Gramajul trebuie să fie un număr pozitiv.");
+      return;
+    }
     startTransition(async () => {
-      await fetch(`/api/dishes/${id}`, {
+      const res = await fetch(`/api/dishes/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName, gramaj: Number(editGramaj) }),
+        body: JSON.stringify({
+          name: editName.trim(),
+          gramaj: Math.round(val),
+          unit: editUnit,
+        }),
         credentials: "include",
       });
-      setEditingId(null);
-      setEditName("");
-      setEditGramaj("");
-      await load();
+      if (res.ok) {
+        toast.success("Modificări salvate.");
+        setEditingId(null);
+        setEditName("");
+        setEditGramaj("");
+        setEditUnit("GRAM");
+        await load();
+      } else {
+        toast.error("Eroare la salvare.");
+      }
     });
   }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+      <Toaster position="bottom-right" richColors />
       <div className="mx-auto max-w-3xl space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -143,19 +199,36 @@ export default function DishesPage() {
               Adaugă un fel de mâncare
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2 sm:grid-cols-3">
+          <CardContent className="grid gap-2 sm:grid-cols-5">
             <Input
               placeholder="Nume (ex: Supă de pui)"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreate();
+              }}
+              className="sm:col-span-2"
             />
             <Input
               type="number"
               inputMode="numeric"
-              placeholder="Gramaj (g)"
+              placeholder="Gramaj"
               value={gramaj}
               onChange={(e) => setGramaj(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreate();
+              }}
             />
+            <Select value={unit} onValueChange={(v) => setUnit(v as Dish["unit"])}>
+              <SelectTrigger>
+                <SelectValue placeholder="Unitate" />
+              </SelectTrigger>
+              <SelectContent>
+            <SelectItem value="GRAM">g</SelectItem>
+            <SelectItem value="MILLILITER">ml</SelectItem>
+            <SelectItem value="BUCATA">buc</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               onClick={handleCreate}
               disabled={!name || !gramaj || isPending}
@@ -201,22 +274,41 @@ export default function DishesPage() {
                   >
                     <div className="w-full">
                       {editingId === d.id ? (
-                        <div className="grid w-full gap-2 sm:grid-cols-2">
+                        <div className="grid w-full gap-2 sm:grid-cols-4">
                           <Input
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSave(d.id);
+                            }}
+                            className="sm:col-span-2"
                           />
                           <Input
                             type="number"
                             inputMode="numeric"
                             value={editGramaj}
                             onChange={(e) => setEditGramaj(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSave(d.id);
+                            }}
                           />
+                          <Select value={editUnit} onValueChange={(v) => setEditUnit(v as Dish["unit"])}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unitate" />
+                            </SelectTrigger>
+                            <SelectContent>
+                          <SelectItem value="GRAM">g</SelectItem>
+                          <SelectItem value="MILLILITER">ml</SelectItem>
+                          <SelectItem value="BUCATA">buc</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       ) : (
                         <div>
                           <p className="font-medium text-zinc-800">{d.name}</p>
-                          <p className="text-sm text-zinc-500">{d.gramaj} g</p>
+                          <p className="text-sm text-zinc-500">
+                            {`${d.gramaj} ${unitLabel(d.unit)}`}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -237,6 +329,7 @@ export default function DishesPage() {
                               setEditingId(null);
                               setEditName("");
                               setEditGramaj("");
+                              setEditUnit("GRAM");
                             }}
                             className="gap-2"
                           >

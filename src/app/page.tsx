@@ -32,7 +32,14 @@ import { format, startOfToday } from "date-fns";
 import { ro } from "date-fns/locale";
 
 // --- Types ---
-export type Dish = { id: number; name: string; gramaj: number };
+export type Dish = {
+  id: number;
+  name: string;
+  gramaj: number;
+  unit?: "GRAM" | "MILLILITER" | "BUCATA" | null;
+};
+const unitLabel = (u?: "GRAM" | "MILLILITER" | "BUCATA" | null) =>
+  u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
 
 type MealKey = "mic_dejun" | "pranz" | "cina";
 type MenuKey = "normal" | "diabetic" | "hepato_gastro";
@@ -196,7 +203,7 @@ export default function Home() {
               >
                 <div>
                   <p className="font-medium leading-none">{d.name}</p>
-                  <p className="text-xs text-zinc-500">{d.gramaj} g</p>
+                  <p className="text-xs text-zinc-500">{d.gramaj} {unitLabel(d.unit)}</p>
                 </div>
                 <Button
                   variant="destructive"
@@ -243,7 +250,7 @@ export default function Home() {
                     >
                       <div>
                         <p className="text-sm font-medium">{d.name}</p>
-                        <p className="text-xs text-zinc-500">{d.gramaj} g</p>
+                        <p className="text-xs text-zinc-500">{d.gramaj} {unitLabel(d.unit)}</p>
                       </div>
                       <Button
                         size="sm"
@@ -449,7 +456,7 @@ export default function Home() {
                           <ul className="ml-4 list-disc space-y-1">
                             {menu[m][meal].map((d) => (
                               <li key={d.id} className="text-sm leading-tight">
-                                {d.name} — {d.gramaj} g
+                                {d.name} — {d.gramaj} {unitLabel(d.unit)}
                               </li>
                             ))}
                           </ul>
