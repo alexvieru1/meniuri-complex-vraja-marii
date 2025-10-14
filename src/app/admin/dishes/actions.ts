@@ -1,13 +1,14 @@
 "use server";
 
-import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import type { Unit } from "@prisma/client";
+import { prisma } from "@/lib/db";
+import { DEFAULT_UNIT } from "@/lib/unit";
 
 export async function createDish(
   name: string,
   gramaj: number | string,
-  unit: Unit = "GRAM",
+  unit: Unit = DEFAULT_UNIT as Unit,
   displayGramaj?: string
 ) {
   if (!name) return { success: false, message: "Numele este obligatoriu." };

@@ -1,18 +1,16 @@
 import React from "react";
 import { Document, Page, StyleSheet, View, Text } from "@react-pdf/renderer";
+import { formatUnitShort, type MaybeUnitValue } from "@/lib/unit";
 
 // Keep types aligned with the app
 export type Dish = {
   id: number;
   name: string;
   gramaj: number;
-  unit?: "GRAM" | "MILLILITER" | "BUCATA" | null;
+  unit?: MaybeUnitValue;
 };
 export type MealKey = "mic_dejun" | "pranz" | "cina";
 export type MenuKey = "normal" | "diabetic" | "hepato_gastro";
-
-const unitLabel = (u?: "GRAM" | "MILLILITER" | "BUCATA" | null) =>
-  u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
 
 const MEAL_LABEL: Record<MealKey, string> = {
   mic_dejun: "Mic dejun",
@@ -180,7 +178,7 @@ export default function MenuPdf({
                                       : styles.item
                                   }
                                 >
-                                  • {toAscii(d.name)} — {d.gramaj} {unitLabel(d.unit)}
+                                  • {toAscii(d.name)} — {d.gramaj} {formatUnitShort(d.unit)}
                                 </Text>
                               ))}
                             </View>

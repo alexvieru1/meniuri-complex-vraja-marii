@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { $Enums, type Unit } from "@prisma/client";
+import { DEFAULT_UNIT } from "@/lib/unit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
       );
     }
   } else {
-    unit = "GRAM" as Unit; // default only when omitted
+    unit = DEFAULT_UNIT as Unit; // default only when omitted
   }
 
   const created = await prisma.dish.create({

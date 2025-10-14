@@ -21,12 +21,18 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  DEFAULT_UNIT,
+  UNIT_SELECT_OPTIONS,
+  formatUnitShort,
+  type UnitValue,
+} from "@/lib/unit";
 
 type Dish = {
   id: number;
   name: string;
   gramaj: number;
-  unit: "GRAM" | "MILLILITER" | "BUCATA";
+  unit: UnitValue;
 };
 
 export default function DishesPage() {
@@ -41,13 +47,12 @@ export default function DishesPage() {
       .replace(/â/g, "a")
       .replace(/î/g, "i");
 
-  const unitLabel = (u: Dish["unit"]) =>
-    u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
+  const unitLabel = formatUnitShort;
 
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [name, setName] = useState("");
   const [gramaj, setGramaj] = useState<string>("");
-  const [unit, setUnit] = useState<Dish["unit"]>("GRAM");
+  const [unit, setUnit] = useState<UnitValue>(DEFAULT_UNIT);
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -68,7 +73,7 @@ export default function DishesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editGramaj, setEditGramaj] = useState<string>("");
-  const [editUnit, setEditUnit] = useState<Dish["unit"]>("GRAM");
+  const [editUnit, setEditUnit] = useState<UnitValue>(DEFAULT_UNIT);
 
   async function load() {
     const res = await fetch("/api/dishes", {
@@ -111,7 +116,7 @@ export default function DishesPage() {
         toast.success("Fel adăugat.");
         setName("");
         setGramaj("");
-        setUnit("GRAM");
+        setUnit(DEFAULT_UNIT);
         await load();
       } else {
         const msg = await res.text().catch(() => "");
@@ -165,7 +170,7 @@ export default function DishesPage() {
         setEditingId(null);
         setEditName("");
         setEditGramaj("");
-        setEditUnit("GRAM");
+        setEditUnit(DEFAULT_UNIT);
         await load();
       } else {
         toast.error("Eroare la salvare.");
@@ -219,14 +224,16 @@ export default function DishesPage() {
                 if (e.key === "Enter") handleCreate();
               }}
             />
-            <Select value={unit} onValueChange={(v) => setUnit(v as Dish["unit"])}>
+            <Select value={unit} onValueChange={(v) => setUnit(v as UnitValue)}>
               <SelectTrigger>
                 <SelectValue placeholder="Unitate" />
               </SelectTrigger>
               <SelectContent>
-            <SelectItem value="GRAM">g</SelectItem>
-            <SelectItem value="MILLILITER">ml</SelectItem>
-            <SelectItem value="BUCATA">buc</SelectItem>
+                {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
@@ -292,14 +299,16 @@ export default function DishesPage() {
                               if (e.key === "Enter") handleSave(d.id);
                             }}
                           />
-                          <Select value={editUnit} onValueChange={(v) => setEditUnit(v as Dish["unit"])}>
+                          <Select value={editUnit} onValueChange={(v) => setEditUnit(v as UnitValue)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Unitate" />
                             </SelectTrigger>
                             <SelectContent>
-                          <SelectItem value="GRAM">g</SelectItem>
-                          <SelectItem value="MILLILITER">ml</SelectItem>
-                          <SelectItem value="BUCATA">buc</SelectItem>
+                              {UNIT_SELECT_OPTIONS.map(({ value, label }) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -329,7 +338,7 @@ export default function DishesPage() {
                               setEditingId(null);
                               setEditName("");
                               setEditGramaj("");
-                              setEditUnit("GRAM");
+                              setEditUnit(DEFAULT_UNIT);
                             }}
                             className="gap-2"
                           >

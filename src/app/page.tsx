@@ -30,16 +30,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { format, startOfToday } from "date-fns";
 import { ro } from "date-fns/locale";
+import { formatUnitShort, type MaybeUnitValue } from "@/lib/unit";
 
 // --- Types ---
 export type Dish = {
   id: number;
   name: string;
   gramaj: number;
-  unit?: "GRAM" | "MILLILITER" | "BUCATA" | null;
+  unit?: MaybeUnitValue;
 };
-const unitLabel = (u?: "GRAM" | "MILLILITER" | "BUCATA" | null) =>
-  u === "MILLILITER" ? "ml" : u === "BUCATA" ? "buc" : "g";
+const unitLabel = formatUnitShort;
 
 type MealKey = "mic_dejun" | "pranz" | "cina";
 type MenuKey = "normal" | "diabetic" | "hepato_gastro";
