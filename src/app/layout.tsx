@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meniul zilei - Complex Vraja Marii",
-  description: "Gestionare si generare meniul zilei",
+  title: "Meniul zilei - Complex Vraja Mării",
+  description: "Gestionare și generare meniul zilei",
 };
 
 export default function RootLayout({
@@ -24,11 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AdminNav/>
+        <AdminNav />
         {children}
       </body>
     </html>
